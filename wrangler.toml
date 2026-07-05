@@ -1,0 +1,28 @@
+name = "fourth-and-inches-backend"
+main = "src/index.ts"
+compatibility_date = "2024-05-02"
+
+[vars]
+SPORTSDATA_API_KEY = "ee36220d6dbc4fcbb4184020f38cffdc"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "inches_db"
+database_id = "8d22384f-bd3c-4cf2-9bf8-984cb4000000"
+
+[triggers]
+crons = ["* * * * *"]
+
+[durable_objects]
+bindings = [
+  { name = "LEAGUE_ROOM", class_name = "LeagueRoom" },
+  { name = "DRAFT_ROOM", class_name = "DraftRoom" }
+]
+
+[[migrations]]
+tag = "v2"
+new_classes = ["LeagueRoom"]
+
+[[migrations]]
+tag = "v3"
+new_classes = ["DraftRoom"]
