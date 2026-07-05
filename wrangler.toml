@@ -8,10 +8,12 @@ SPORTSDATA_API_KEY = "ee36220d6dbc4fcbb4184020f38cffdc"
 [[d1_databases]]
 binding = "DB"
 database_name = "inches_db"
-database_id = "8d22384f-bd3c-4cf2-9bf8-984cb4000000"
+database_id = "712cd98c-9d64-48f4-ad37-641a7a8d8fe4"
 
 [triggers]
-crons = ["* * * * *"]
+# Hourly during test/preview to avoid hammering the SportsData API.
+# Restore "* * * * *" (or a live-window schedule) for production.
+crons = ["0 * * * *"]
 
 [durable_objects]
 bindings = [
