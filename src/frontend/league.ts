@@ -1,4 +1,4 @@
-import { renderPage, SPARK } from "./theme";
+import { renderPage, SPARK, ICONS } from "./theme";
 
 interface Standing {
   rank: number;
@@ -68,7 +68,7 @@ export function renderLeague(leagueId: string): string {
     <div class="page-header fade-up fade-up-1">
       <a href="/" class="header-back">←</a>
       <span class="outfit-font font-black text-lg">League Home</span>
-      <span class="header-back" style="border:none;">🏆</span>
+      <span class="header-back text-green" style="border:none;padding:6px;">${ICONS.league}</span>
     </div>
 
     <div class="glass-card flex-between fade-up fade-up-1">

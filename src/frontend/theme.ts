@@ -161,7 +161,7 @@ header, h1, h2, h3, h4, .outfit-font {
 .app-container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 20px 16px 120px 16px;
+  padding: 20px 16px 140px 16px;
   width: 100%;
   position: relative;
 }

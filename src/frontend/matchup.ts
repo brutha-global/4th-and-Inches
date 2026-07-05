@@ -1,4 +1,4 @@
-import { renderPage } from "./theme";
+import { renderPage, ICONS } from "./theme";
 
 export function renderMatchupRoom(matchup: any): string {
   const t1Score = matchup.team1_score || 112.6;
@@ -41,7 +41,7 @@ export function renderMatchupRoom(matchup: any): string {
         <span class="status-dot dot-live"></span>
         <span class="font-bold text-sm">Week 5 · Live</span>
       </div>
-      <span class="header-back" style="border:none;">⚡</span>
+      <span class="header-back text-green" style="border:none;padding:6px;">${ICONS.matchup}</span>
     </div>
 
     <!-- Score header -->
@@ -72,11 +72,11 @@ export function renderMatchupRoom(matchup: any): string {
       <span class="section-label" style="margin-bottom:8px;">Coach Tokens</span>
       <div class="flex gap-3">
         <div class="flex-between card" style="flex:1;margin:0;padding:10px 12px;">
-          <span class="text-2xs">🩹 Injury Ins.</span>
+          <span class="text-2xs"><span class="status-dot dot-out" style="margin-right:6px;"></span>Injury Ins.</span>
           <span class="text-green font-black" id="insuranceCount">1</span>
         </div>
         <div class="flex-between card" style="flex:1;margin:0;padding:10px 12px;">
-          <span class="text-2xs">🚩 Challenge</span>
+          <span class="text-2xs"><span class="status-dot" style="background:var(--neon-amber);margin-right:6px;"></span>Challenge</span>
           <span class="text-green font-black" id="challengeCount">1</span>
         </div>
       </div>

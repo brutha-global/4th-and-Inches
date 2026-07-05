@@ -46,21 +46,21 @@ function starterRow(slot: string, p: RosterPlayer): string {
   const ptsColor = p.status === "out" ? "text-red" : showLive ? "text-green" : "text-muted";
   const initials = p.name.split(" ").map(w => w[0]).slice(0, 2).join("");
   const outBanner = p.status === "out"
-    ? `<a href="/matchup/TEST" class="pill pill-red" style="text-decoration:none; margin-top:4px;">⚠ Injury Insurance</a>` : "";
+    ? `<span class="pill pill-red" style="margin-top:4px;display:inline-block;width:fit-content;">⚠ Injury Insurance</span>` : "";
 
   return `
     <a href="/player/${encodeURIComponent(p.name)}" class="player-row" style="text-decoration:none;color:inherit;">
-      <div class="flex items-center gap-3">
-        <span class="position-badge pos-${slot === "FLEX" ? "WR" : slot}" style="min-width:38px;">${slot}</span>
-        <div class="avatar">${initials}</div>
-        <div class="flex-col">
-          <span class="font-semibold text-sm">${p.name}</span>
+      <div class="flex items-center gap-3" style="flex:1;min-width:0;">
+        <span class="position-badge pos-${slot === "FLEX" ? "WR" : slot}" style="min-width:38px;flex-shrink:0;">${slot}</span>
+        <div class="avatar" style="flex-shrink:0;">${initials}</div>
+        <div class="flex-col" style="gap:2px;min-width:0;flex:1;">
+          <span class="font-semibold text-sm" style="line-height:1.25;display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</span>
           <span class="text-2xs text-muted">${p.team} · ${p.opp}</span>
           ${p.statLine ? `<span class="text-2xs ${m.cls}">${p.statLine}</span>` : ""}
           ${outBanner}
         </div>
       </div>
-      <div class="flex-col items-end gap-1">
+      <div class="flex-col items-end gap-1" style="flex-shrink:0;padding-left:8px;">
         <span class="outfit-font mono-num font-black ${ptsColor}" style="font-size:18px;">${ptsDisplay}</span>
         <span class="flex items-center gap-1 text-2xs ${m.cls}"><span class="status-dot ${m.dot}"></span>${m.label}</span>
       </div>
@@ -71,15 +71,15 @@ function benchRow(p: RosterPlayer): string {
   const initials = p.name.split(" ").map(w => w[0]).slice(0, 2).join("");
   return `
     <div class="player-row" style="opacity:.82;">
-      <div class="flex items-center gap-3">
-        <span class="position-badge pos-${p.pos}">${p.pos}</span>
-        <div class="avatar" style="width:34px;height:34px;font-size:12px;">${initials}</div>
-        <div class="flex-col">
-          <span class="font-medium text-sm">${p.name}</span>
+      <div class="flex items-center gap-3" style="flex:1;min-width:0;">
+        <span class="position-badge pos-${p.pos}" style="flex-shrink:0;">${p.pos}</span>
+        <div class="avatar" style="width:34px;height:34px;font-size:12px;flex-shrink:0;">${initials}</div>
+        <div class="flex-col" style="min-width:0;">
+          <span class="font-medium text-sm" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</span>
           <span class="text-2xs text-muted">${p.team} · ${p.opp}</span>
         </div>
       </div>
-      <span class="outfit-font mono-num text-muted font-bold" style="font-size:15px;">${p.proj.toFixed(1)}</span>
+      <span class="outfit-font mono-num text-muted font-bold" style="font-size:15px;flex-shrink:0;padding-left:8px;">${p.proj.toFixed(1)}</span>
     </div>`;
 }
 
