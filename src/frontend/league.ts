@@ -1,69 +1,98 @@
 import { renderPage, SPARK, ICONS } from "./theme";
+import {
+  getLeague,
+  getStandings,
+  getAllTeams,
+  DIVISION_MAP,
+  USER_TEAM_ID,
+  esc,
+} from "./data";
 
-interface Standing {
-  rank: number;
-  name: string;
-  w: number;
-  l: number;
-  pf: number;
-  pa: number;
-  streak: string;
-  you?: boolean;
+function streakColor(streak: string): string {
+  return streak.startsWith("W") ? "text-green" : "text-red";
 }
 
-const STANDINGS: Standing[] = [
-  { rank: 1, name: "Rushing Royalty",  w: 4, l: 0, pf: 512.4, pa: 421.1, streak: "W4" },
-  { rank: 2, name: "Gridiron Giants",  w: 3, l: 1, pf: 498.7, pa: 440.3, streak: "W2", you: true },
-  { rank: 3, name: "End Zone Elite",   w: 3, l: 1, pf: 476.2, pa: 452.8, streak: "L1" },
-  { rank: 4, name: "Blitz Brigade",    w: 2, l: 2, pf: 461.9, pa: 458.4, streak: "W1" },
-  { rank: 5, name: "Pocket Passers",   w: 2, l: 2, pf: 449.0, pa: 470.6, streak: "L1" },
-  { rank: 6, name: "Hail Mary Heroes", w: 1, l: 3, pf: 430.5, pa: 489.2, streak: "L2" },
-  { rank: 7, name: "Fourth Down Fury", w: 1, l: 3, pf: 418.3, pa: 495.7, streak: "L3" },
-  { rank: 8, name: "Sack Attack",      w: 0, l: 4, pf: 402.1, pa: 519.9, streak: "L4" },
-];
-
-const POWER: { rank: number; name: string; blurb: string; trend: string }[] = [
-  { rank: 1, name: "Rushing Royalty", blurb: "Undefeated and unbothered — the ground game is a cheat code.", trend: "→" },
-  { rank: 2, name: "Gridiron Giants", blurb: "Quietly stacking wins. That WR corps is about to erupt.", trend: "▲" },
-  { rank: 3, name: "End Zone Elite",  blurb: "One bad Sunday from the top. Still terrifying on paper.", trend: "▼" },
-  { rank: 4, name: "Blitz Brigade",   blurb: "Boom-or-bust roster. This week? Boom.", trend: "▲" },
-];
-
-function standingRow(s: Standing): string {
-  const seedBadge = s.rank <= 4 ? "pill-green" : s.rank <= 6 ? "pill-amber" : "pill-red";
-  const streakColor = s.streak.startsWith("W") ? "text-green" : "text-red";
+function standingRow(s: any, rank: number): string {
+  const seedBadge = rank <= 4 ? "pill-green" : rank <= 6 ? "pill-amber" : "pill-red";
+  const you = s.team_id === USER_TEAM_ID;
+  const pf = Number(s.points_for || 0);
+  const pa = Number(s.points_against || 0);
   return `
-    <div class="player-row" style="${s.you ? "background:var(--neon-green-soft);margin:0 -12px;padding:12px;border-radius:10px;" : ""}">
+    <div class="player-row" style="${you ? "background:var(--neon-green-soft);margin:0 -12px;padding:12px;border-radius:10px;" : ""}">
       <div class="flex items-center gap-3">
-        <span class="pill ${seedBadge}" style="min-width:26px;justify-content:center;padding:4px 8px;">${s.rank}</span>
+        <span class="pill ${seedBadge}" style="min-width:26px;justify-content:center;padding:4px 8px;">${rank}</span>
         <div class="flex-col">
-          <span class="font-semibold text-sm">${s.name}${s.you ? ' <span class="text-2xs text-green">· YOU</span>' : ""}</span>
-          <span class="text-2xs text-muted mono-num">${s.pf.toFixed(1)} PF · ${s.pa.toFixed(1)} PA</span>
+          <span class="font-semibold text-sm">${esc(s.name)}${you ? ' <span class="text-2xs text-green">· YOU</span>' : ""}</span>
+          <span class="text-2xs text-muted mono-num">${pf.toFixed(1)} PF · ${pa.toFixed(1)} PA</span>
         </div>
       </div>
       <div class="flex-col items-end gap-1">
-        <span class="mono-num font-bold text-sm">${s.w}-${s.l}</span>
-        <span class="text-2xs font-bold ${streakColor}">${s.streak}</span>
+        <span class="mono-num font-bold text-sm">${s.wins}-${s.losses}</span>
+        <span class="text-2xs font-bold ${streakColor(s.streak || "0W")}">${esc(s.streak || "—")}</span>
       </div>
     </div>`;
 }
 
-function powerRow(p: { rank: number; name: string; blurb: string; trend: string }): string {
-  const tColor = p.trend === "▲" ? "text-green" : p.trend === "▼" ? "text-red" : "text-muted";
+/** AI-style power blurb derived from record + points (no external call needed). */
+function powerBlurb(s: any, rank: number): { trend: string; blurb: string } {
+  const pf = Number(s.points_for || 0);
+  const wins = Number(s.wins || 0);
+  if (rank === 1) return { trend: "→", blurb: "Top of the table — the scoreboard says they earned it." };
+  if (wins >= 3) return { trend: "▲", blurb: "Stacking wins and points for. Trending up fast." };
+  if (pf > 460) return { trend: "▲", blurb: "Scoring with anyone — the record will follow." };
+  if (wins <= 1) return { trend: "▼", blurb: "Rough stretch. Waiver wire is where the season gets saved." };
+  return { trend: "→", blurb: "Right in the mix — one hot week from the top four." };
+}
+
+function powerRow(s: any, rank: number): string {
+  const { trend, blurb } = powerBlurb(s, rank);
+  const tColor = trend === "▲" ? "text-green" : trend === "▼" ? "text-red" : "text-muted";
   return `
     <div class="player-row">
       <div class="flex items-center gap-3">
-        <span class="outfit-font font-black text-purple" style="font-size:18px;min-width:26px;">#${p.rank}</span>
+        <span class="outfit-font font-black text-purple" style="font-size:18px;min-width:26px;">#${rank}</span>
         <div class="flex-col">
-          <span class="font-semibold text-sm">${p.name}</span>
-          <span class="text-2xs text-muted" style="line-height:1.4;">${p.blurb}</span>
+          <span class="font-semibold text-sm">${esc(s.name)}</span>
+          <span class="text-2xs text-muted" style="line-height:1.4;">${blurb}</span>
         </div>
       </div>
-      <span class="${tColor} font-bold" style="font-size:16px;">${p.trend}</span>
+      <span class="${tColor} font-bold" style="font-size:16px;">${trend}</span>
     </div>`;
 }
 
-export function renderLeague(leagueId: string): string {
+function emptyState(leagueId: string): string {
+  const body = `
+    <div class="page-header fade-up fade-up-1">
+      <a href="/" class="header-back">←</a>
+      <span class="outfit-font font-black text-lg">League Home</span>
+      <span class="header-back text-green" style="border:none;padding:6px;">${ICONS.league}</span>
+    </div>
+    <div class="card fade-up fade-up-2" style="text-align:center;padding:40px 20px;">
+      <span class="section-label" style="justify-content:center;">No league found</span>
+      <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;">
+        This league hasn't been set up yet. Create or join a league to see standings and rosters here.
+      </p>
+      <a href="/" class="btn-secondary" style="margin-top:16px;max-width:200px;">Back to Home</a>
+    </div>`;
+  return renderPage({ title: "League", body, active: "league" });
+}
+
+export async function renderLeague(db: D1Database, leagueId: string): Promise<string> {
+  const league = await getLeague(db, leagueId);
+  if (!league) return emptyState(leagueId);
+
+  const standings = await getStandings(db, leagueId);
+  const teams = await getAllTeams(db, leagueId);
+  const teamCount = teams.length;
+
+  const standingsHtml =
+    standings.length > 0
+      ? standings.map((s, i) => standingRow(s, i + 1)).join("")
+      : `<p class="text-sm text-muted" style="padding:8px 0;">Standings populate once week 1 games are final.</p>`;
+
+  const powerHtml = standings.slice(0, 4).map((s, i) => powerRow(s, i + 1)).join("");
+
+  // Full-league roster access: link to the League Hub "All Rosters" view.
   const body = `
     <div class="page-header fade-up fade-up-1">
       <a href="/" class="header-back">←</a>
@@ -73,25 +102,23 @@ export function renderLeague(leagueId: string): string {
 
     <div class="glass-card flex-between fade-up fade-up-1">
       <div class="flex-col">
-        <span class="outfit-font font-black text-base">Dynasty Warriors</span>
-        <span class="text-2xs text-muted">8 Teams · PPR · Season 2024</span>
+        <span class="outfit-font font-black text-base">${esc(league.name)}</span>
+        <span class="text-2xs text-muted">${teamCount} Teams · ${esc(league.scoring_type)} · Season ${league.season}</span>
       </div>
       <div class="flex-col items-end">
         <span class="text-2xs text-muted uppercase">Week</span>
-        <span class="outfit-font font-black text-green" style="font-size:24px;line-height:1;">5</span>
+        <span class="outfit-font font-black text-green" style="font-size:24px;line-height:1;">${league.week}</span>
       </div>
     </div>
 
-    <!-- AI Power Rankings -->
     <div class="card fade-up fade-up-2" style="border-color: rgba(168,85,247,.28);">
       <div class="flex-between mb-2">
         <span class="section-label" style="margin:0;">${SPARK} AI Power Rankings</span>
         <span class="text-2xs text-muted">Updated 2h ago</span>
       </div>
-      ${POWER.map(powerRow).join("")}
+      ${powerHtml}
     </div>
 
-    <!-- Standings -->
     <div class="card fade-up fade-up-3">
       <div class="flex-between mb-2">
         <span class="section-label" style="margin:0;">Standings</span>
@@ -100,12 +127,16 @@ export function renderLeague(leagueId: string): string {
           <span class="chip" style="color:var(--neon-amber);border-color:rgba(245,158,11,.4);">Bubble</span>
         </div>
       </div>
-      ${STANDINGS.map(standingRow).join("")}
+      ${standingsHtml}
     </div>
 
     <div class="flex gap-3 fade-up fade-up-4">
+      <a href="/hub/${esc(leagueId)}" class="btn-secondary">All Rosters</a>
       <a href="/matchup/TEST" class="btn-secondary">Matchups</a>
-      <a href="/draft/${leagueId}" class="btn-secondary">Draft Room</a>
+    </div>
+    <div class="flex gap-3 fade-up fade-up-4" style="margin-top:12px;">
+      <a href="/freeagency/${esc(leagueId)}" class="btn-secondary">Free Agency</a>
+      <a href="/draft/${esc(leagueId)}" class="btn-secondary">Draft Room</a>
     </div>
   `;
 

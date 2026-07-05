@@ -24,6 +24,10 @@ import { renderRoster } from "./frontend/roster";
 import { renderLeague } from "./frontend/league";
 import { renderCoach } from "./frontend/coach";
 import { renderPlayer } from "./frontend/player";
+import { renderPlayerProfile } from "./frontend/playerprofile";
+import { renderFreeAgency } from "./frontend/freeagency";
+import { renderLineup } from "./frontend/lineup";
+import { renderLeagueHub } from "./frontend/leaguehub";
 
 const HTML_HEADERS = { "Content-Type": "text/html; charset=utf-8" };
 
@@ -101,7 +105,7 @@ export default {
     if (url.pathname.startsWith("/roster/")) {
       const match = url.pathname.match(/^\/roster\/([^\/]+)$/);
       if (match) {
-        return new Response(renderRoster(match[1]), { headers: HTML_HEADERS });
+        return new Response(await renderRoster(env.DB, match[1]), { headers: HTML_HEADERS });
       }
     }
 
@@ -118,12 +122,47 @@ export default {
       }
     }
 
+    // DB-backed Player Profile (Layer B) — /playerdb/:playerId
+    if (url.pathname.startsWith("/playerdb/")) {
+      const match = url.pathname.match(/^\/playerdb\/([^\/]+)$/);
+      if (match) {
+        return new Response(await renderPlayerProfile(env.DB, decodeURIComponent(match[1])), { headers: HTML_HEADERS });
+      }
+    }
+
+    // Free Agency (Layer B) — /freeagency/:leagueId
+    if (url.pathname.startsWith("/freeagency/")) {
+      const match = url.pathname.match(/^\/freeagency\/([^\/]+)$/);
+      if (match) {
+        const position = url.searchParams.get("pos") || undefined;
+        const search = url.searchParams.get("q") || undefined;
+        return new Response(await renderFreeAgency(env.DB, match[1], { position, search }), { headers: HTML_HEADERS });
+      }
+    }
+
+    // Lineup & Changes (Layer B) — /lineup/:teamId
+    if (url.pathname.startsWith("/lineup/")) {
+      const match = url.pathname.match(/^\/lineup\/([^\/]+)$/);
+      if (match) {
+        return new Response(await renderLineup(env.DB, match[1]), { headers: HTML_HEADERS });
+      }
+    }
+
+    // League Hub (Layer B) — /hub/:leagueId
+    if (url.pathname.startsWith("/hub/")) {
+      const match = url.pathname.match(/^\/hub\/([^\/]+)$/);
+      if (match) {
+        const tab = url.searchParams.get("tab") || "standings";
+        return new Response(await renderLeagueHub(env.DB, match[1], tab), { headers: HTML_HEADERS });
+      }
+    }
+
     // League home screen — HTML only for the bare /league/:id path.
     // (API sub-routes like /league/:id/standings are handled further down.)
     {
       const leagueHome = url.pathname.match(/^\/league\/([^\/]+)$/);
       if (leagueHome) {
-        return new Response(renderLeague(leagueHome[1]), { headers: HTML_HEADERS });
+        return new Response(await renderLeague(env.DB, leagueHome[1]), { headers: HTML_HEADERS });
       }
     }
 

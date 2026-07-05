@@ -9,3 +9,9 @@ dist/
 # Local UI preview tooling (not part of the app)
 shots/
 shots.js
+shots_b.js
+
+# Generated / cached data (regenerate via build_league.py)
+.sd_players.json
+.sd_teams.json
+seed_league.sql
