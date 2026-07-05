@@ -69,8 +69,23 @@ export function renderPlayer(playerId: string): string {
       <span class="header-back" style="border:none;">☆</span>
     </div>
 
+    <div class="desk-grid">
+      <div class="desk-main">
+    <!-- Season stats -->
+    <div class="fade-up fade-up-2">
+      <span class="section-label">Season Stats</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${statCells}</div>
+    </div>
+
+    <!-- Game log -->
+    <div class="card fade-up fade-up-3">
+      <span class="section-label">Last 4 Weeks</span>
+      <div class="flex items-end" style="height:120px;gap:8px;">${logBars}</div>
+    </div>
+      </div>
+      <div class="desk-side flex-col gap-4">
     <!-- Hero -->
-    <div class="glass-card fade-up fade-up-1" style="text-align:center;">
+    <div class="glass-card fade-up fade-up-1" style="text-align:center;margin:0;">
       <div class="avatar" style="width:88px;height:88px;border-radius:24px;margin:0 auto 14px;font-size:30px;color:var(--neon-green);">${p.name.split(" ").map(w=>w[0]).join("")}</div>
       <div class="outfit-font font-black" style="font-size:26px;line-height:1.1;">${p.name}</div>
       <div class="flex-center gap-2 mt-2">
@@ -93,20 +108,8 @@ export function renderPlayer(playerId: string): string {
       </div>
     </div>
 
-    <!-- Season stats -->
-    <div class="fade-up fade-up-2">
-      <span class="section-label">Season Stats</span>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">${statCells}</div>
-    </div>
-
-    <!-- Game log -->
-    <div class="card fade-up fade-up-3">
-      <span class="section-label">Last 4 Weeks</span>
-      <div class="flex items-end" style="height:120px;gap:8px;">${logBars}</div>
-    </div>
-
     <!-- News -->
-    <div class="card fade-up fade-up-3" style="border-color:rgba(74,158,255,.28);">
+    <div class="card fade-up fade-up-3" style="margin:0;border-color:rgba(74,158,255,.28);">
       <div class="flex-between mb-2">
         <span class="section-label" style="margin:0;">Latest News</span>
         <span class="pill" style="background:rgba(74,158,255,.14);color:var(--neon-blue);">START</span>
@@ -117,6 +120,8 @@ export function renderPlayer(playerId: string): string {
     <div class="flex gap-3 fade-up fade-up-4">
       <a href="/roster/T_TEST_1" class="btn-secondary">Bench</a>
       <a href="/roster/T_TEST_1" class="btn-primary">＋ Add to Lineup</a>
+    </div>
+      </div>
     </div>
   `;
 

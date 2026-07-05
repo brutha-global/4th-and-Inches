@@ -136,19 +136,24 @@ export async function renderRoster(db: D1Database, teamId: string): Promise<stri
       </div>
     </div>
 
-    <div class="card fade-up fade-up-2">
-      <span class="section-label">Starters</span>
-      ${starters.map(starterRow).join("")}
-    </div>
+    <div class="desk-grid">
+      <div class="desk-main">
+        <div class="card fade-up fade-up-2">
+          <span class="section-label">Starters</span>
+          ${starters.map(starterRow).join("")}
+        </div>
+      </div>
+      <div class="desk-side flex-col gap-4">
+        <div class="card fade-up fade-up-3" style="margin:0;">
+          <span class="section-label">Bench</span>
+          ${bench.map(benchRow).join("")}
+        </div>
 
-    <div class="card fade-up fade-up-3">
-      <span class="section-label">Bench</span>
-      ${bench.map(benchRow).join("")}
-    </div>
-
-    <div class="flex gap-3 fade-up fade-up-4">
-      <a href="/lineup/${esc(teamId)}" class="btn-secondary">Set Lineup</a>
-      <a href="/coach" class="btn-purple">${SPARK} AI Optimize</a>
+        <div class="flex gap-3 fade-up fade-up-4">
+          <a href="/lineup/${esc(teamId)}" class="btn-secondary">Set Lineup</a>
+          <a href="/coach" class="btn-purple">${SPARK} AI Optimize</a>
+        </div>
+      </div>
     </div>
   `;
 

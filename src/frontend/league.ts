@@ -111,32 +111,37 @@ export async function renderLeague(db: D1Database, leagueId: string): Promise<st
       </div>
     </div>
 
-    <div class="card fade-up fade-up-2" style="border-color: rgba(168,85,247,.28);">
-      <div class="flex-between mb-2">
-        <span class="section-label" style="margin:0;">${SPARK} AI Power Rankings</span>
-        <span class="text-2xs text-muted">Updated 2h ago</span>
-      </div>
-      ${powerHtml}
-    </div>
-
-    <div class="card fade-up fade-up-3">
-      <div class="flex-between mb-2">
-        <span class="section-label" style="margin:0;">Standings</span>
-        <div class="flex gap-2 text-2xs">
-          <span class="chip" style="color:var(--neon-green);border-color:rgba(34,197,94,.4);">Playoff</span>
-          <span class="chip" style="color:var(--neon-amber);border-color:rgba(245,158,11,.4);">Bubble</span>
+    <div class="desk-grid">
+      <div class="desk-main">
+        <div class="card fade-up fade-up-3">
+          <div class="flex-between mb-2">
+            <span class="section-label" style="margin:0;">Standings</span>
+            <div class="flex gap-2 text-2xs">
+              <span class="chip" style="color:var(--neon-green);border-color:rgba(34,197,94,.4);">Playoff</span>
+              <span class="chip" style="color:var(--neon-amber);border-color:rgba(245,158,11,.4);">Bubble</span>
+            </div>
+          </div>
+          ${standingsHtml}
         </div>
       </div>
-      ${standingsHtml}
-    </div>
+      <div class="desk-side flex-col gap-4">
+        <div class="card fade-up fade-up-2" style="margin:0;border-color: rgba(168,85,247,.28);">
+          <div class="flex-between mb-2">
+            <span class="section-label" style="margin:0;">${SPARK} AI Power Rankings</span>
+            <span class="text-2xs text-muted">Updated 2h ago</span>
+          </div>
+          ${powerHtml}
+        </div>
 
-    <div class="flex gap-3 fade-up fade-up-4">
-      <a href="/hub/${esc(leagueId)}" class="btn-secondary">All Rosters</a>
-      <a href="/matchup/TEST" class="btn-secondary">Matchups</a>
-    </div>
-    <div class="flex gap-3 fade-up fade-up-4" style="margin-top:12px;">
-      <a href="/freeagency/${esc(leagueId)}" class="btn-secondary">Free Agency</a>
-      <a href="/draft/${esc(leagueId)}" class="btn-secondary">Draft Room</a>
+        <div class="flex gap-3 fade-up fade-up-4">
+          <a href="/hub/${esc(leagueId)}" class="btn-secondary">All Rosters</a>
+          <a href="/matchup/TEST" class="btn-secondary">Matchups</a>
+        </div>
+        <div class="flex gap-3 fade-up fade-up-4">
+          <a href="/freeagency/${esc(leagueId)}" class="btn-secondary">Free Agency</a>
+          <a href="/draft/${esc(leagueId)}" class="btn-secondary">Draft Room</a>
+        </div>
+      </div>
     </div>
   `;
 

@@ -35,6 +35,8 @@ export function renderCoach(): string {
       <span class="pill pill-purple">${SPARK} GPT-4o</span>
     </div>
 
+    <div class="desk-grid">
+      <div class="desk-main">
     <!-- Lineup Optimizer -->
     <div class="ai-card fade-up fade-up-1">
       <div class="flex items-center gap-3 mb-4">
@@ -72,8 +74,10 @@ export function renderCoach(): string {
       <button class="btn-secondary" onclick="analyzeTrade()">Analyze Trade</button>
     </div>
 
+      </div>
+      <div class="desk-side flex-col gap-4">
     <!-- Waiver Assistant -->
-    <div class="ai-card fade-up fade-up-3">
+    <div class="ai-card fade-up fade-up-3" style="margin:0;">
       <div class="flex items-center gap-3 mb-4">
         <div class="ai-icon">${SPARK}</div>
         <div class="flex-col">
@@ -114,6 +118,8 @@ export function renderCoach(): string {
           <div class="bb-row"><span>Z. Moss</span><span class="text-red">−</span></div>
           <div class="bb-row"><span>G. Pickens</span><span class="text-red">−</span></div>
         </div>
+      </div>
+    </div>
       </div>
     </div>
   `;

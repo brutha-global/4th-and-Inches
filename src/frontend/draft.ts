@@ -58,6 +58,8 @@ export function renderDraftRoom(leagueId: string): string {
 
     <button class="btn-secondary mb-6 fade-up fade-up-2" onclick="updateQueue()">Sync Auto-Draft Queue</button>
 
+    <div class="desk-grid">
+      <div class="desk-main">
     <!-- Best available -->
     <div class="card fade-up fade-up-3">
       <span class="section-label">Best Available</span>
@@ -81,10 +83,14 @@ export function renderDraftRoom(leagueId: string): string {
       </div>
     </div>
 
+      </div>
+      <div class="desk-side flex-col gap-4">
     <!-- Recent picks ticker -->
-    <div class="card fade-up fade-up-4">
+    <div class="card fade-up fade-up-4" style="margin:0;">
       <span class="section-label">Recent Picks</span>
       <div id="picksLog"><p class="text-xs text-muted">Waiting for the draft to begin…</p></div>
+    </div>
+      </div>
     </div>
   `;
 
