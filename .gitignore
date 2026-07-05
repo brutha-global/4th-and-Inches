@@ -4,3 +4,7 @@ node_modules/
 dist/
 .DS_Store
 *.log
+
+# Local UI preview tooling (not part of the app)
+shots/
+shots.js

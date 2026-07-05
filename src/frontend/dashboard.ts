@@ -1,115 +1,111 @@
-import { SHARED_CSS } from "./theme";
+import { renderPage, SPARK } from "./theme";
 
 export function renderDashboard(
   coach: any,
   recap: any,
   rankings: any[]
 ): string {
-  const homeIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>`;
-  const rosterIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>`;
-  const matchupIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" /></svg>`;
-  const leagueIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" /></svg>`;
+  const coachName = (coach && coach.coach_id) ? String(coach.coach_id).replace(/^T_/, "").replace(/_/g, " ") : "Alex";
+  const level = (coach && coach.level) || 1;
+  const title = (coach && coach.title) || "Rookie";
 
-  const rankRows = rankings.map((r: any) => `
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <span class="outfit-font text-green" style="font-weight: 800; font-size: 16px;">#${r.rank}</span>
-        <span style="font-weight: 600;">${r.name}</span>
+  const newsRows = (rankings || []).map((r: any, i: number) => `
+    <div class="player-row card-tappable" style="padding: 12px 8px; margin: 0 -8px; border-radius: 10px;">
+      <div class="flex items-center gap-3">
+        <span class="outfit-font text-green font-black" style="font-size: 16px; min-width: 26px;">#${r.rank}</span>
+        <div class="flex-col">
+          <span class="font-semibold text-sm">${r.name}</span>
+          <span class="text-2xs text-muted">${r.blurb}</span>
+        </div>
       </div>
-      <span style="font-size: 12px; color: var(--text-muted);">${r.blurb}</span>
     </div>
   `).join("");
 
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Dashboard - 4th & Inches</title>
-  <style>
-    ${SHARED_CSS}
-  </style>
-</head>
-<body>
-  <div class="app-container">
-    
-    <!-- Header Area -->
-    <div class="flex-between" style="margin-bottom: 24px;">
+  const grade = (recap && recap.grade) || "B";
+  const gradeColor = grade.startsWith("A") ? "text-green" : grade.startsWith("B") ? "text-blue" : grade.startsWith("C") ? "text-amber" : "text-red";
+
+  const body = `
+    <!-- Greeting -->
+    <div class="flex-between mb-6 fade-up fade-up-1">
       <div class="flex-col">
         <span class="text-sm text-muted">Good Morning,</span>
-        <span class="font-bold text-lg">Coach ${coach.coach_id || 'Alex'}</span>
+        <span class="outfit-font font-black" style="font-size: 24px; line-height: 1.1;">Coach ${coachName}</span>
       </div>
-      <div style="text-align: right;">
-        <div class="text-sm text-muted">2024 Season</div>
-        <div class="text-xs text-green">1st Place</div>
-      </div>
+      <a href="/roster/T_TEST_1" style="text-decoration:none;" class="flex-col items-end">
+        <div class="avatar" style="width:44px;height:44px;border-radius:14px;color:var(--neon-green);">${coachName.charAt(0).toUpperCase()}</div>
+        <span class="text-2xs text-muted mt-2">Lv.${level} · ${title}</span>
+      </a>
     </div>
 
-    <!-- Main Score Widget -->
-    <div class="glass-card flex-col gap-4">
+    <!-- Main matchup score widget -->
+    <div class="glass-card flex-col gap-4 fade-up fade-up-2">
       <div class="flex-between">
-        <div class="flex-col">
-          <span class="text-xs text-muted">Your Team</span>
-          <span class="font-semibold text-sm">Gridiron Giants</span>
+        <div class="flex items-center gap-2">
+          <span class="status-dot dot-live"></span>
+          <span class="text-2xs uppercase font-bold text-green">Live · Week 5</span>
         </div>
-        <span class="font-bold text-green">3-1</span>
+        <span class="pill pill-green">3 - 1 · 1st</span>
       </div>
 
       <div class="flex-between align-end">
         <div class="flex-col">
-          <span class="outfit-font" style="font-size: 40px; font-weight: 800; line-height: 1;">112.6</span>
-          <span class="text-xs text-muted">Proj 120.4</span>
+          <span class="text-2xs text-muted uppercase">Gridiron Giants</span>
+          <span class="outfit-font mono-num" style="font-size: 44px; font-weight: 800; line-height: 1;">112.6</span>
+          <span class="text-2xs text-green">▲ Proj 120.4</span>
         </div>
-        <span class="text-xs font-semibold text-muted">WEEK 5 MATCHUP</span>
-        <div class="flex-col" style="text-align: right;">
-          <span class="outfit-font" style="font-size: 24px; font-weight: 600; line-height: 1; color: var(--text-muted);">98.7</span>
-          <span class="text-xs text-muted">Proj 104.2</span>
+        <span class="text-2xs font-bold text-muted" style="padding-bottom: 20px;">VS</span>
+        <div class="flex-col items-end">
+          <span class="text-2xs text-muted uppercase">Rushing Royalty</span>
+          <span class="outfit-font mono-num text-muted" style="font-size: 32px; font-weight: 700; line-height: 1;">98.7</span>
+          <span class="text-2xs text-muted">Proj 104.2</span>
         </div>
       </div>
-      
-      <a href="/matchup/TEST" class="btn-primary" style="margin-top: 8px;">VIEW MATCHUP</a>
-    </div>
 
-    <!-- Power Rankings / News -->
-    <div class="card">
-      <div class="flex-between" style="margin-bottom: 12px;">
-        <span class="font-bold">League News</span>
+      <div>
+        <div class="flex-between text-2xs font-bold mb-2">
+          <span class="text-green">WIN PROBABILITY</span>
+          <span class="mono-num">68%</span>
+        </div>
+        <div class="track"><div class="track-fill fill-green" style="width: 68%;"></div></div>
       </div>
-      <div class="flex-col gap-2">
-        ${rankRows || '<div class="text-sm text-muted">No news updates.</div>'}
+
+      <a href="/matchup/TEST" class="btn-primary mt-2">VIEW LIVE MATCHUP</a>
+    </div>
+
+    <!-- Quick actions -->
+    <div class="flex gap-3 mb-6 fade-up fade-up-3">
+      <a href="/roster/T_TEST_1" class="card card-tappable flex-col gap-2" style="flex:1; margin:0; text-decoration:none; color:inherit;">
+        <span class="text-lg text-green" style="width:22px;height:22px;">${SPARK}</span>
+        <span class="text-sm font-bold">Set Lineup</span>
+        <span class="text-2xs text-muted">1 slot empty</span>
+      </a>
+      <a href="/coach" class="card card-tappable flex-col gap-2" style="flex:1; margin:0; text-decoration:none; color:inherit; border-color: rgba(168,85,247,.3);">
+        <span class="text-lg text-purple" style="width:22px;height:22px;">${SPARK}</span>
+        <span class="text-sm font-bold text-purple">AI Coach</span>
+        <span class="text-2xs text-muted">Optimize now</span>
+      </a>
+    </div>
+
+    <!-- Weekly recap -->
+    <div class="card fade-up fade-up-3">
+      <div class="flex-between mb-2">
+        <span class="section-label" style="margin:0;">This Week's Recap</span>
+        <span class="outfit-font font-black ${gradeColor}" style="font-size: 22px;">${grade}</span>
+      </div>
+      <p class="text-sm text-muted" style="line-height: 1.5;">${(recap && recap.recap) || "Complete a matchup week to receive your AI performance analysis."}</p>
+    </div>
+
+    <!-- Power rankings / news -->
+    <div class="card fade-up fade-up-4">
+      <div class="flex-between mb-2">
+        <span class="section-label" style="margin:0;">Power Rankings</span>
+        <a href="/league/L_TEST" class="text-2xs text-green font-bold" style="text-decoration:none;">Full League →</a>
+      </div>
+      <div class="flex-col">
+        ${newsRows || '<div class="text-sm text-muted">No updates yet.</div>'}
       </div>
     </div>
-
-    <!-- Draft Lobby Button (For testing) -->
-    <div style="margin-top: 24px;">
-      <a href="/draft/TEST" class="btn-secondary">Enter Draft Lobby</a>
-    </div>
-
-  </div>
-
-  <!-- Tab Bar -->
-  <nav class="tab-bar">
-    <a href="/" class="tab-item active">
-      ${homeIcon}
-      <span>Home</span>
-    </a>
-    <a href="#" class="tab-item">
-      ${rosterIcon}
-      <span>Roster</span>
-    </a>
-    <a href="/matchup/TEST" class="tab-item">
-      ${matchupIcon}
-      <span>Matchup</span>
-    </a>
-    <a href="/draft/TEST" class="tab-item">
-      ${leagueIcon}
-      <span>Draft</span>
-    </a>
-  </nav>
-
-</body>
-</html>
   `;
-}
 
+  return renderPage({ title: "Home", body, active: "home" });
+}

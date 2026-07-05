@@ -20,6 +20,12 @@ import { registerDevice, sendSimulatedPush } from "./notifications/notifier";
 import { renderDashboard } from "./frontend/dashboard";
 import { renderDraftRoom } from "./frontend/draft";
 import { renderMatchupRoom } from "./frontend/matchup";
+import { renderRoster } from "./frontend/roster";
+import { renderLeague } from "./frontend/league";
+import { renderCoach } from "./frontend/coach";
+import { renderPlayer } from "./frontend/player";
+
+const HTML_HEADERS = { "Content-Type": "text/html; charset=utf-8" };
 
 // Helper to determine ET weekend live window or 5-minute interval
 function shouldSync(date: Date): { run: boolean; reason: string } {
@@ -87,7 +93,37 @@ export default {
       const match = url.pathname.match(/^\/matchup\/([^\/]+)$/);
       if (match) {
         const html = renderMatchupRoom({ team1_score: 112.5, team2_score: 124.0 });
-        return new Response(html, { headers: { "Content-Type": "text/html" } });
+        return new Response(html, { headers: HTML_HEADERS });
+      }
+    }
+
+    // My Team / Roster screen
+    if (url.pathname.startsWith("/roster/")) {
+      const match = url.pathname.match(/^\/roster\/([^\/]+)$/);
+      if (match) {
+        return new Response(renderRoster(match[1]), { headers: HTML_HEADERS });
+      }
+    }
+
+    // AI Coach hub screen
+    if (url.pathname === "/coach") {
+      return new Response(renderCoach(), { headers: HTML_HEADERS });
+    }
+
+    // Player profile screen
+    if (url.pathname.startsWith("/player/")) {
+      const match = url.pathname.match(/^\/player\/([^\/]+)$/);
+      if (match) {
+        return new Response(renderPlayer(match[1]), { headers: HTML_HEADERS });
+      }
+    }
+
+    // League home screen — HTML only for the bare /league/:id path.
+    // (API sub-routes like /league/:id/standings are handled further down.)
+    {
+      const leagueHome = url.pathname.match(/^\/league\/([^\/]+)$/);
+      if (leagueHome) {
+        return new Response(renderLeague(leagueHome[1]), { headers: HTML_HEADERS });
       }
     }
 
