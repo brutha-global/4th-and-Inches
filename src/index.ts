@@ -68,21 +68,7 @@ export default {
 
     // 0. Serving HTML Frontend views
     if (url.pathname === "/" || url.pathname === "/index.html") {
-      let coach = await env.DB.prepare("SELECT * FROM coach_profiles WHERE coach_id = 'T_TEST_1'").first<any>();
-      if (!coach) {
-        coach = { level: 1, xp: 120, title: "Rookie", archetype: "" };
-      }
-
-      let recap = await env.DB.prepare("SELECT response FROM ai_response_cache WHERE hash LIKE '%recap%'").first<{ response: string }>();
-      let recapData = recap ? JSON.parse(recap.response) : { recap: "Broadcasting signals are loading. Complete a matchup week to receive AI performance analyses!", grade: "B" };
-
-      const rankings = [
-        { rank: 1, name: "Team Two", blurb: "Rank #1: Strong contender with 1-0 record and consistent redzone scoring." },
-        { rank: 2, name: "Team One", blurb: "Rank #2: Pivot to bench updates needed before next week kickoff." }
-      ];
-
-      const html = renderDashboard(coach, recapData, rankings);
-      return new Response(html, { headers: { "Content-Type": "text/html" } });
+      return new Response(await renderDashboard(env.DB), { headers: { "Content-Type": "text/html" } });
     }
 
     if (url.pathname.startsWith("/draft/")) {
@@ -96,7 +82,7 @@ export default {
     if (url.pathname.startsWith("/matchup/")) {
       const match = url.pathname.match(/^\/matchup\/([^\/]+)$/);
       if (match) {
-        const html = renderMatchupRoom({ team1_score: 112.5, team2_score: 124.0 });
+        const html = await renderMatchupRoom(env.DB, "L_TEST", "T_TEST_1");
         return new Response(html, { headers: HTML_HEADERS });
       }
     }
@@ -136,7 +122,11 @@ export default {
       if (match) {
         const position = url.searchParams.get("pos") || undefined;
         const search = url.searchParams.get("q") || undefined;
-        return new Response(await renderFreeAgency(env.DB, match[1], { position, search }), { headers: HTML_HEADERS });
+        const status = url.searchParams.get("status") || undefined;
+        const sort = url.searchParams.get("sort") || undefined;
+        const mode = url.searchParams.get("mode") || undefined;
+        const locked = url.searchParams.get("locked") === "1";
+        return new Response(await renderFreeAgency(env.DB, match[1], { position, search, status, sort, mode, locked }), { headers: HTML_HEADERS });
       }
     }
 
@@ -153,7 +143,8 @@ export default {
       const match = url.pathname.match(/^\/hub\/([^\/]+)$/);
       if (match) {
         const tab = url.searchParams.get("tab") || "standings";
-        return new Response(await renderLeagueHub(env.DB, match[1], tab), { headers: HTML_HEADERS });
+        const conf = url.searchParams.get("conf") || "all";
+        return new Response(await renderLeagueHub(env.DB, match[1], tab, conf), { headers: HTML_HEADERS });
       }
     }
 

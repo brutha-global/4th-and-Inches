@@ -97,6 +97,9 @@ function tokenPill(label: string, enabled: boolean, explain: string): string {
   return `<span class="pill" style="opacity:.5;background:var(--bg-elevated);color:var(--text-muted);" title="${esc(explain)}">${label}</span>`;
 }
 
+/* NFL dome teams — used to decide weather vs "Dome" on the next-matchup card. */
+const DOME_TEAMS = new Set(["ATL", "DAL", "DET", "HOU", "IND", "LAR", "LV", "MIN", "NO", "ARI"]);
+
 export async function renderPlayerProfile(db: D1Database, playerId: string): Promise<string> {
   const p = await getPlayer(db, playerId);
   if (!p) return emptyState();
@@ -114,6 +117,8 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
   const snap = Math.round(52 + r() * 46);
   const owned = Math.round(3 + r() * 96);
   const trendUp = r() > 0.5;
+  const trendPct = Math.round(1 + r() * 12);
+  const byeWeek = 6 + (hash(p.player_id + "bye") % 9); // 6..14
 
   const photo = (p.headshot_url || "").trim();
   const avatarInner = photo
@@ -152,14 +157,25 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
     ? `Rostered by <a href="/roster/${esc(owner.team_id)}" style="color:var(--neon-blue);text-decoration:none;">${esc(owner.name)}</a> · ${esc(owner.slot_type)}`
     : `<span class="text-green">Free agent — available to add</span>`;
 
-  const body = `
-    <div class="page-header fade-up fade-up-1">
-      <a href="${owner ? `/roster/${esc(owner.team_id)}` : `/freeagency/${LEAGUE_ID}`}" class="header-back">←</a>
-      <span class="outfit-font font-black text-lg">Player Profile</span>
-      <span class="header-back" style="border:none;padding:6px;color:var(--neon-blue);">${ICONS.roster}</span>
-    </div>
+  // Structured next-matchup facts (deterministic).
+  const nextOpp = opps[Math.floor(r() * opps.length)].replace("@", "");
+  const defRank = 1 + (hash(p.player_id + "def") % 32);
+  const defOrdinal = defRank + (defRank % 10 === 1 && defRank !== 11 ? "st" : defRank % 10 === 2 && defRank !== 12 ? "nd" : defRank % 10 === 3 && defRank !== 13 ? "rd" : "th");
+  const implied = Math.round((17 + r() * 14) * 10) / 10;
+  const isDome = DOME_TEAMS.has(p.team);
+  const weatherOpts = ["Clear 58°", "Wind 18mph", "Rain likely", "Cold 31°"];
+  const weather = isDome ? "🏟 Dome" : `🌤 ${weatherOpts[hash(p.player_id + "wx") % weatherOpts.length]}`;
 
-    <!-- Header block -->
+  const primaryActions = `
+    <div class="flex gap-2 mt-4" style="flex-wrap:wrap;">
+      <a href="/lineup/${owner ? esc(owner.team_id) : "T_TEST_1"}" class="btn-primary" style="flex:1;min-width:78px;padding:10px;">Start</a>
+      <a href="/lineup/${owner ? esc(owner.team_id) : "T_TEST_1"}" class="btn-secondary" style="flex:1;min-width:78px;padding:10px;">Bench</a>
+      <a href="${owner ? "#" : `/freeagency/${LEAGUE_ID}`}" class="btn-secondary" style="flex:1;min-width:78px;padding:10px;">${owner ? "Add/Drop" : "Add"}</a>
+      <a href="#" class="btn-secondary" style="flex:1;min-width:78px;padding:10px;">Trade</a>
+      <a href="#" class="btn-secondary" style="flex:1;min-width:78px;padding:10px;">Set Alert</a>
+    </div>`;
+
+  const headerBlock = `
     <div class="glass-card fade-up fade-up-1">
       <div class="flex items-center gap-4">
         <div class="avatar" style="width:72px;height:72px;border-radius:16px;font-size:24px;color:var(--text-light);overflow:hidden;">${avatarInner}</div>
@@ -171,26 +187,21 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
             <span class="pill ${inj.chipClass}" style="padding:3px 10px;">${esc(inj.label)}</span>
           </div>
           <span class="text-2xs text-muted" style="margin-top:2px;">
-            ${owned}% rostered <span class="${trendUp ? "text-green" : "text-red"}">${trendUp ? "▲" : "▼"}</span> · ${ownerLine}
+            ${owned}% rostered
+            <span class="${trendUp ? "text-green" : "text-red"}">${trendUp ? "▲" : "▼"} ${trendPct}% 7d</span>
+            · Bye wk ${byeWeek}
           </span>
+          <span class="text-2xs text-muted">${ownerLine}</span>
         </div>
       </div>
-
-      <!-- Primary actions -->
-      <div class="flex gap-2 mt-4" style="flex-wrap:wrap;">
-        <a href="#" class="btn-primary" style="flex:1;min-width:90px;padding:10px;">Start</a>
-        <a href="#" class="btn-secondary" style="flex:1;min-width:90px;padding:10px;">Bench</a>
-        <a href="#" class="btn-secondary" style="flex:1;min-width:90px;padding:10px;">${owner ? "Trade" : "Add"}</a>
-      </div>
-
-      <!-- Coach Token row -->
+      ${primaryActions}
       <div class="flex gap-2 mt-2 items-center">
         ${tokenPill("Insure this player", inj.isRisk, "Only available for Questionable or OUT players")}
         ${tokenPill("Challenge this play", false, "Available once this player's game is live")}
       </div>
-    </div>
+    </div>`;
 
-    <!-- Stat strip -->
+  const statStrip = `
     <div class="card fade-up fade-up-2" style="padding:14px 2px;">
       <div class="flex" style="overflow-x:auto;">
         ${statCell("Fpts", String(seasonPts))}
@@ -199,24 +210,18 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
         ${statCell("RZ %", rzShare + "%")}
         ${statCell("Snap %", snap + "%", true)}
       </div>
-    </div>
+    </div>`;
 
-    <!-- Trend sparkline -->
+  const sparkCard = `
     <div class="card fade-up fade-up-2">
       <span class="section-label">Last 5 games</span>
       ${sparkline(last5)}
       <div class="flex mono-num" style="margin-top:6px;gap:6px;">
         ${last5.map((v) => `<span class="text-2xs text-muted" style="flex:1;text-align:center;">${v.toFixed(1)}</span>`).join("")}
       </div>
-    </div>
+    </div>`;
 
-    <!-- Next matchup -->
-    <div class="card fade-up fade-up-3" style="border-color:rgba(74,158,255,.28);">
-      <span class="section-label">${SPARK} Next matchup</span>
-      <p class="text-sm" style="line-height:1.5;">${matchupRead(p.position, r)}</p>
-    </div>
-
-    <!-- Game log -->
+  const gameLogCard = `
     <div class="card fade-up fade-up-3">
       <span class="section-label">Game log</span>
       <table class="mono-num" style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -225,9 +230,21 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
         </tr></thead>
         <tbody>${gameLog}</tbody>
       </table>
-    </div>
+    </div>`;
 
-    <!-- News feed -->
+  const nextMatchupCard = `
+    <div class="card fade-up fade-up-3" style="border-color:rgba(74,158,255,.28);">
+      <span class="section-label">${SPARK} Next matchup</span>
+      <div class="flex" style="flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <span class="chip">vs ${esc(nextOpp)}</span>
+        <span class="chip">DEF ${defOrdinal} vs ${esc(p.position)}</span>
+        <span class="chip">${weather}</span>
+        <span class="chip">Implied ${implied.toFixed(1)}</span>
+      </div>
+      <p class="text-sm" style="line-height:1.5;">${matchupRead(p.position, r)}</p>
+    </div>`;
+
+  const newsCard = `
     <div class="card fade-up fade-up-4">
       <span class="section-label">News & notes</span>
       ${news
@@ -238,6 +255,37 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
           </div>`
         )
         .join("")}
+    </div>`;
+
+  const footerActions = `
+    <div class="card fade-up fade-up-4">
+      <span class="section-label">More</span>
+      <div class="flex-col gap-2">
+        <a href="#" class="btn-secondary" style="padding:11px;">Compare to another player</a>
+        <a href="${owner ? `/roster/${esc(owner.team_id)}` : `/freeagency/${LEAGUE_ID}`}" class="btn-secondary" style="padding:11px;">View on team roster</a>
+        <a href="#" class="btn-secondary" style="padding:11px;">View full season log</a>
+      </div>
+    </div>`;
+
+  const body = `
+    <div class="page-header fade-up fade-up-1">
+      <a href="${owner ? `/roster/${esc(owner.team_id)}` : `/freeagency/${LEAGUE_ID}`}" class="header-back">←</a>
+      <span class="outfit-font font-black text-lg">Player Profile</span>
+      <span class="header-back" style="border:none;padding:6px;color:var(--neon-blue);">${ICONS.roster}</span>
+    </div>
+
+    <div class="desk-grid">
+      <div class="desk-main">
+        ${headerBlock}
+        ${statStrip}
+        ${sparkCard}
+        ${gameLogCard}
+      </div>
+      <div class="desk-side">
+        ${nextMatchupCard}
+        ${newsCard}
+        ${footerActions}
+      </div>
     </div>
   `;
 

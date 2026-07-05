@@ -307,6 +307,56 @@ header, h1, h2, h3, h4, .outfit-font {
 .tab-item.active { color: var(--neon-green); }
 .tab-item svg { width: 24px; height: 24px; }
 .tab-item:active { transform: scale(0.92); }
+
+/* ── Yard-line divider (structural motif) ────────────── */
+.yardline {
+  position: relative; height: 1px; background: var(--border-subtle);
+  margin: 20px 0; border: none;
+}
+.yardline::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(
+    to right, var(--text-muted) 0, var(--text-muted) 1px, transparent 1px, transparent 10%);
+  opacity: .35; top: -3px; height: 7px;
+}
+
+/* ── Desktop top navigation (shown ≥ 900px) ──────────── */
+.desktop-nav { display: none; }
+
+/* ── Desktop responsive layer ────────────────────────── */
+@media (min-width: 900px) {
+  .app-container {
+    max-width: 1120px;
+    padding: 24px 32px 64px 32px;
+  }
+  /* bottom tab bar becomes a top bar on desktop */
+  .tab-bar {
+    order: -1;
+    position: sticky; top: 0; bottom: auto; left: auto; transform: none;
+    width: 100%; max-width: none; margin: 0 auto;
+    border-top: none; border-bottom: 1px solid var(--border-subtle);
+    justify-content: center; gap: 12px; padding: 12px 0;
+    background: rgba(11,15,25,.86); backdrop-filter: blur(10px);
+  }
+  .tab-item { flex-direction: row; flex: 0 0 auto; font-size: 13px; gap: 8px; padding: 8px 16px; border-radius: 10px; }
+  .tab-item svg { width: 18px; height: 18px; }
+  .tab-item.active { background: var(--neon-green-soft); }
+
+  /* Two-column desktop grid: screens opt in by wrapping content. */
+  .desk-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; align-items: start; }
+  .desk-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+  .desk-main { min-width: 0; }
+  .desk-side { min-width: 0; position: sticky; top: 76px; }
+
+  /* Sticky bars (save/deadline) constrain to container width on desktop */
+  .sticky-bar-desk { position: static !important; transform: none !important; width: 100% !important; max-width: none !important; padding: 0 !important; margin-top: 16px; }
+}
+
+/* Below 900px the grid collapses to a single column (mobile-first default) */
+@media (max-width: 899px) {
+  .desk-grid, .desk-grid-3 { display: block; }
+  .desk-side { position: static; }
+}
 `;
 
 /** Single source of truth for icons. */
