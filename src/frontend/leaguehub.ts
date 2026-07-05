@@ -3,7 +3,7 @@ import {
   getLeague,
   getStandings,
   getAllTeams,
-  getRoster,
+  getRostersForTeams,
   DIVISION_MAP,
   USER_TEAM_ID,
   CURRENT_WEEK,
@@ -61,11 +61,12 @@ function divisionTable(title: string, rows: any[]): string {
     </div>`;
 }
 
-async function rosterAccordion(db: D1Database, teams: any[], week: number): Promise<string> {
+async function rosterAccordion(db: D1Database, leagueId: string, teams: any[], week: number): Promise<string> {
+  const rostersByTeam = await getRostersForTeams(db, leagueId, week);
   const blocks: string[] = [];
   for (const t of teams) {
     const meta = DIVISION_MAP[t.team_id];
-    const roster = await getRoster(db, t.team_id, week);
+    const roster = rostersByTeam[t.team_id] || [];
     const starters = roster.filter((p) => p.is_starter === 1);
     const proj = starters.reduce((a, p) => a + projFor(p), 0);
     const mini = starters
@@ -162,7 +163,7 @@ export async function renderLeagueHub(
 
   let content = "";
   if (tab === "rosters") {
-    content = await rosterAccordion(db, teams, week);
+    content = await rosterAccordion(db, leagueId, teams, week);
   } else if (tab === "playoffs") {
     content = playoffPicture(standings);
   } else {

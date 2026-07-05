@@ -115,6 +115,36 @@ export async function getStandings(db: D1Database, leagueId: string): Promise<an
   return results || [];
 }
 
+/**
+ * Batched: every team's roster for a league in ONE query, grouped by team_id.
+ * Avoids firing N sequential D1 queries in a loop (which can hit the Workers
+ * per-invocation subrequest limit and silently truncate results).
+ */
+export async function getRostersForTeams(
+  db: D1Database,
+  leagueId: string,
+  week: number
+): Promise<Record<string, DBPlayer[]>> {
+  const SLOT_ORDER =
+    "CASE r.slot_type WHEN 'QB' THEN 1 WHEN 'RB' THEN 2 WHEN 'WR' THEN 3 WHEN 'TE' THEN 4 WHEN 'FLEX' THEN 5 WHEN 'K' THEN 6 WHEN 'DEF' THEN 7 ELSE 8 END";
+  const { results } = await db
+    .prepare(
+      `SELECT r.team_id, r.slot_type, r.is_starter, p.*
+       FROM rosters r
+       JOIN teams t ON r.team_id = t.team_id
+       JOIN players p ON r.player_id = p.player_id
+       WHERE t.league_id = ? AND r.week = ?
+       ORDER BY r.is_starter DESC, ${SLOT_ORDER}, p.name`
+    )
+    .bind(leagueId, week)
+    .all<any>();
+  const byTeam: Record<string, DBPlayer[]> = {};
+  for (const row of results || []) {
+    (byTeam[row.team_id] ||= []).push(row as DBPlayer);
+  }
+  return byTeam;
+}
+
 export async function getAllTeams(db: D1Database, leagueId: string): Promise<DBTeam[]> {
   const { results } = await db
     .prepare("SELECT * FROM teams WHERE league_id = ? ORDER BY wins DESC, points_for DESC")
