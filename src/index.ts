@@ -361,16 +361,18 @@ export default {
 
         // 11.1 Mock Setup
         try {
-          await env.DB.prepare("DELETE FROM substitution_log WHERE team_id = 'T_TEST_1'").run();
-          await env.DB.prepare("DELETE FROM substitution_tokens WHERE team_id = 'T_TEST_1'").run();
-          await env.DB.prepare("DELETE FROM rosters WHERE team_id IN ('T_TEST_1', 'T_TEST_2')").run();
-          await env.DB.prepare("DELETE FROM waivers WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM draft_picks WHERE draft_id = 'DR_TEST'").run();
-          await env.DB.prepare("DELETE FROM drafts WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM standings WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM matchups WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM teams WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM leagues WHERE league_id = 'L_TEST'").run();
+          // NOTE: self-test runs on a DEDICATED namespace (L_SELFTEST / T_SELFTEST_*)
+          // so it never collides with the live demo league L_TEST (which the frontend renders).
+          await env.DB.prepare("DELETE FROM substitution_log WHERE team_id IN ('T_SELFTEST_1', 'T_SELFTEST_2')").run();
+          await env.DB.prepare("DELETE FROM substitution_tokens WHERE team_id IN ('T_SELFTEST_1', 'T_SELFTEST_2')").run();
+          await env.DB.prepare("DELETE FROM rosters WHERE team_id IN ('T_SELFTEST_1', 'T_SELFTEST_2')").run();
+          await env.DB.prepare("DELETE FROM waivers WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM draft_picks WHERE draft_id = 'DR_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM drafts WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM standings WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM matchups WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM teams WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM leagues WHERE league_id = 'L_SELFTEST'").run();
           await env.DB.prepare("DELETE FROM games WHERE game_id IN ('TG_1', 'TG_2', 'G_TEST_1', 'G_TEST_2')").run();
           await env.DB.prepare("DELETE FROM players WHERE player_id IN ('PL_1', 'PL_2')").run();
 
@@ -385,25 +387,25 @@ export default {
 
           await env.DB.prepare(`
             INSERT INTO leagues (league_id, name, commissioner_id, scoring_type, roster_size, bench_size, season, week, status)
-            VALUES ('L_TEST', 'V1 Test League', 'COMMISH_1', 'PPR', 16, 7, 2026, 1, 'Active')
+            VALUES ('L_SELFTEST', 'V1 Self-Test League', 'COMMISH_1', 'PPR', 16, 7, 2026, 1, 'Active')
           `).run();
 
           await env.DB.prepare(`
             INSERT INTO teams (team_id, league_id, owner_id, name)
-            VALUES ('T_TEST_1', 'L_TEST', 'OWNER_1', 'Team One')
+            VALUES ('T_SELFTEST_1', 'L_SELFTEST', 'OWNER_1', 'Team One')
           `).run();
           await env.DB.prepare(`
             INSERT INTO teams (team_id, league_id, owner_id, name)
-            VALUES ('T_TEST_2', 'L_TEST', 'OWNER_2', 'Team Two')
+            VALUES ('T_SELFTEST_2', 'L_SELFTEST', 'OWNER_2', 'Team Two')
           `).run();
 
           await env.DB.prepare(`
             INSERT INTO rosters (roster_id, team_id, player_id, slot_type, week, is_starter)
-            VALUES ('R_V1_1', 'T_TEST_1', 'PL_1', 'QB', 1, 1)
+            VALUES ('R_V1_1', 'T_SELFTEST_1', 'PL_1', 'QB', 1, 1)
           `).run();
           await env.DB.prepare(`
             INSERT INTO rosters (roster_id, team_id, player_id, slot_type, week, is_starter)
-            VALUES ('R_V1_2', 'T_TEST_1', 'PL_2', 'BENCH', 1, 0)
+            VALUES ('R_V1_2', 'T_SELFTEST_1', 'PL_2', 'BENCH', 1, 0)
           `).run();
 
           results.push({ name: "11.1 Mock database tables construction", passed: true });
@@ -414,7 +416,7 @@ export default {
         // 11.2 Waivers & FAAB check
         if (results.every(r => r.passed)) {
           try {
-            await submitWaiverClaim("L_TEST", "T_TEST_1", "PL_2", null, 15, env.DB);
+            await submitWaiverClaim("L_SELFTEST", "T_SELFTEST_1", "PL_2", null, 15, env.DB);
             await processAllLeaguesWaivers(env.DB);
             results.push({ name: "11.2 Waivers FAAB blind bid process check", passed: true });
           } catch (e: any) {
@@ -425,7 +427,7 @@ export default {
         // 11.3 Lineup validation updates
         if (results.every(r => r.passed)) {
           try {
-            const res = await updateLineup("T_TEST_1", 1, [{ player_id: "PL_1", slot_type: "BENCH", is_starter: false }], env.DB);
+            const res = await updateLineup("T_SELFTEST_1", 1, [{ player_id: "PL_1", slot_type: "BENCH", is_starter: false }], env.DB);
             if (res.status === 200) {
               results.push({ name: "11.3 Starting lineup slot validations", passed: true });
             } else {
@@ -440,7 +442,7 @@ export default {
         // 11.4 H2H Trade Proposal check
         if (results.every(r => r.passed)) {
           try {
-            await proposeTrade("L_TEST", "T_TEST_1", "T_TEST_2", ["PL_2"], ["PL_1"], env.DB);
+            await proposeTrade("L_SELFTEST", "T_SELFTEST_1", "T_SELFTEST_2", ["PL_2"], ["PL_1"], env.DB);
             results.push({ name: "11.4 H2H trade peer transfer executions", passed: true });
           } catch (e: any) {
             results.push({ name: "11.4 H2H trade peer transfer executions", passed: false, error: e.message });
@@ -450,15 +452,15 @@ export default {
         // 11.5 Draft Room DO communication
         if (results.every(r => r.passed)) {
           try {
-            const doId = env.DRAFT_ROOM.idFromName("L_TEST");
+            const doId = env.DRAFT_ROOM.idFromName("L_SELFTEST");
             const stub = env.DRAFT_ROOM.get(doId);
-            const wsRes = await stub.fetch(new Request("http://localhost/league/L_TEST/draft/ws", {
+            const wsRes = await stub.fetch(new Request("http://localhost/league/L_SELFTEST/draft/ws", {
               headers: { "Upgrade": "websocket" }
             }));
             const ws = wsRes.webSocket;
             if (ws) {
               ws.accept();
-              ws.send(JSON.stringify({ type: "init", draftId: "DR_TEST", teamId: "T_TEST_1", teams: ["T_TEST_1", "T_TEST_2"] }));
+              ws.send(JSON.stringify({ type: "init", draftId: "DR_SELFTEST", teamId: "T_SELFTEST_1", teams: ["T_SELFTEST_1", "T_SELFTEST_2"] }));
               ws.close();
               results.push({ name: "11.5 Snake draft room DO WebSockets check", passed: true });
             } else {
@@ -472,8 +474,8 @@ export default {
         // 11.6 AI assistant features tests (Optimize, Trade review)
         if (results.every(r => r.passed)) {
           try {
-            const lineupOpt = await optimizeLineup("T_TEST_1", 1, env.DB, env);
-            const tradeReview = await reviewTrade("T_TEST_1", "T_TEST_2", ["PL_1"], ["PL_2"], env.DB);
+            const lineupOpt = await optimizeLineup("T_SELFTEST_1", 1, env.DB, env);
+            const tradeReview = await reviewTrade("T_SELFTEST_1", "T_SELFTEST_2", ["PL_1"], ["PL_2"], env.DB);
 
             if (lineupOpt && tradeReview) {
               results.push({ name: "11.6 AI optimization and collusion reviews", passed: true });
@@ -488,8 +490,8 @@ export default {
         // 11.7 Gamification & XP checks
         if (results.every(r => r.passed)) {
           try {
-            await awardXP("T_TEST_1", 200, "Draft completed", env.DB);
-            await updateReputation("T_TEST_1", 15, env.DB);
+            await awardXP("T_SELFTEST_1", 200, "Draft completed", env.DB);
+            await updateReputation("T_SELFTEST_1", 15, env.DB);
             results.push({ name: "11.7 Gamification XP milestones and reputation checks", passed: true });
           } catch (e: any) {
             results.push({ name: "11.7 Gamification XP milestones and reputation checks", passed: false, error: e.message });
@@ -509,16 +511,16 @@ export default {
 
         // Cleanup database mocks
         try {
-          await env.DB.prepare("DELETE FROM substitution_log WHERE team_id = 'T_TEST_1'").run();
-          await env.DB.prepare("DELETE FROM substitution_tokens WHERE team_id = 'T_TEST_1'").run();
-          await env.DB.prepare("DELETE FROM rosters WHERE team_id IN ('T_TEST_1', 'T_TEST_2')").run();
-          await env.DB.prepare("DELETE FROM waivers WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM draft_picks WHERE draft_id = 'DR_TEST'").run();
-          await env.DB.prepare("DELETE FROM drafts WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM standings WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM matchups WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM teams WHERE league_id = 'L_TEST'").run();
-          await env.DB.prepare("DELETE FROM leagues WHERE league_id = 'L_TEST'").run();
+          await env.DB.prepare("DELETE FROM substitution_log WHERE team_id IN ('T_SELFTEST_1', 'T_SELFTEST_2')").run();
+          await env.DB.prepare("DELETE FROM substitution_tokens WHERE team_id IN ('T_SELFTEST_1', 'T_SELFTEST_2')").run();
+          await env.DB.prepare("DELETE FROM rosters WHERE team_id IN ('T_SELFTEST_1', 'T_SELFTEST_2')").run();
+          await env.DB.prepare("DELETE FROM waivers WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM draft_picks WHERE draft_id = 'DR_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM drafts WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM standings WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM matchups WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM teams WHERE league_id = 'L_SELFTEST'").run();
+          await env.DB.prepare("DELETE FROM leagues WHERE league_id = 'L_SELFTEST'").run();
           await env.DB.prepare("DELETE FROM games WHERE game_id IN ('G_TEST_1', 'G_TEST_2')").run();
           await env.DB.prepare("DELETE FROM players WHERE player_id IN ('PL_1', 'PL_2')").run();
         } catch (cleanupError) {
