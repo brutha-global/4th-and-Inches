@@ -17,6 +17,8 @@ import { finalizeMatchupWeek } from "./api/events";
 import { awardXP, updateReputation } from "./lib/coachXP";
 import { handleRevenueCatWebhook, getUserSubscriptionDetails } from "./api/subscriptions";
 import { registerDevice, sendSimulatedPush } from "./notifications/notifier";
+import { handleNewsRoutes } from "./api/news";
+import { runNewsPolls, syncWatchlistFromRosters } from "./lib/nflNews";
 import { renderDashboard } from "./frontend/dashboard";
 import { renderDraftRoom } from "./frontend/draft";
 import { renderMatchupRoom } from "./frontend/matchup";
@@ -172,6 +174,20 @@ export default {
         const doId = env.DRAFT_ROOM.idFromName(match[1]);
         return env.DRAFT_ROOM.get(doId).fetch(request);
       }
+    }
+
+    // 1b. NFL News + Injury feed (ported from nfl-news-api) — REST + SSE.
+    // Handles /api/news, /api/news/team/:id, /api/news/player/:id,
+    // /api/injuries, /api/watchlist, /api/feed/status, /api/news/poll,
+    // /api/news/events. Returns null when the path isn't a news route.
+    if (
+      url.pathname.startsWith("/api/news") ||
+      url.pathname === "/api/injuries" ||
+      url.pathname.startsWith("/api/watchlist") ||
+      url.pathname === "/api/feed/status"
+    ) {
+      const newsResp = await handleNewsRoutes(url, request, env.DB);
+      if (newsResp) return newsResp;
     }
 
     // 2. Sync Router
@@ -600,6 +616,15 @@ export default {
         await syncAllData(env, timeframe.season, timeframe.week);
       } catch (error) {
         console.error("Scheduled cron sync failed", error);
+      }
+      // NFL news + injury feed (ported from nfl-news-api). Keep the watchlist
+      // in step with current rosters, then run all poll jobs into D1.
+      try {
+        await syncWatchlistFromRosters(env.DB);
+        const r = await runNewsPolls(env.DB);
+        console.log(`News poll: news=${r.news} injuries=${r.injuries} playerNews=${r.playerNews}`);
+      } catch (error) {
+        console.error("Scheduled news poll failed", error);
       }
     })());
   }

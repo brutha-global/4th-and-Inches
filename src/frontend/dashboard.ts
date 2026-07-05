@@ -3,6 +3,10 @@ import {
   getTeam,
   getRoster,
   getStandings,
+  getNews,
+  classifyNews,
+  relTime,
+  feedDegraded,
   injuryMeta,
   esc,
   initials,
@@ -134,16 +138,39 @@ export async function renderDashboard(db: D1Database): Promise<string> {
     </div>`;
   }
 
-  // ---- 2) League News carousel -----------------------------------------
+  // ---- 2) League News carousel — REAL ESPN news via nfl-news-api port ---
   type NewsItem = { kind: string; cls: string; headline: string; ts: string; href: string };
-  const news: NewsItem[] = [
-    { kind: "Power rank", cls: "text-green", headline: "Fourth Down Kings surge to #1 after a 4-0 start", ts: "12m ago", href: "/hub/L_TEST" },
-    { kind: "Injury", cls: "text-amber", headline: "George Pickens listed Questionable (hamstring) for Week 5", ts: "38m ago", href: "/roster/T_TEST_1" },
-    { kind: "Trade", cls: "text-purple", headline: "Sofia sends a 2nd-round pick to Marcus for a WR2 upgrade", ts: "1h ago", href: "#" },
-    { kind: "News", cls: "text-blue", headline: "Waivers process Wednesday 3AM ET — set your claims", ts: "2h ago", href: "/freeagency/L_TEST" },
-    { kind: "Power rank", cls: "text-green", headline: "Gridiron Giants slide to #9 amid a 1-3 skid", ts: "3h ago", href: "/hub/L_TEST" },
-    { kind: "Injury", cls: "text-amber", headline: "Three starters flagged league-wide — check your bench", ts: "5h ago", href: "/roster/T_TEST_1" },
-  ];
+  const realNews = await getNews(db, 12);
+  const feed = await feedDegraded(db);
+
+  let news: NewsItem[];
+  if (realNews.length > 0) {
+    news = realNews.map((n) => {
+      const c = classifyNews(n);
+      return {
+        kind: c.kind,
+        cls: c.cls,
+        headline: n.headline,
+        ts: relTime(n.published_at) || "recently",
+        href: c.href,
+      };
+    });
+  } else {
+    // Fallback for a fresh DB before the first poll runs — clearly a seed set.
+    news = [
+      { kind: "News", cls: "text-blue", headline: "Live NFL news loads here once the feed syncs — check back shortly", ts: "—", href: "/hub/L_TEST" },
+      { kind: "Injury", cls: "text-amber", headline: "Injury alerts from around the league will appear here", ts: "—", href: "/hub/L_TEST" },
+      { kind: "Power rank", cls: "text-green", headline: "Power ranking movement posts here each week", ts: "—", href: "/hub/L_TEST" },
+    ];
+  }
+
+  // Section-13 degraded-feed note: states what's true + what to do, no apology.
+  const feedNote = feed.degraded
+    ? `<div class="card fade-up fade-up-2" style="border-color:rgba(245,158,11,.4);padding:10px 14px;margin-bottom:8px;">
+         <span class="text-2xs text-amber font-bold">⚠ ${esc(feed.reason || "NFL feed delayed")} Scores and rosters are unaffected; news will refresh automatically.</span>
+       </div>`
+    : "";
+
   const carouselCards = news
     .map(
       (n) => `
@@ -155,6 +182,7 @@ export async function renderDashboard(db: D1Database): Promise<string> {
     )
     .join("");
   const carousel = `
+    ${feedNote}
     <div class="flex-between mb-2 fade-up fade-up-2">
       <span class="section-label" style="margin:0;">League News</span>
       <a href="/hub/L_TEST" class="text-2xs text-green font-bold" style="text-decoration:none;">All →</a>

@@ -2,6 +2,8 @@ import { renderPage, SPARK, ICONS } from "./theme";
 import {
   getPlayer,
   getPlayerOwner,
+  getPlayerNews,
+  relTime,
   injuryMeta,
   initials,
   esc,
@@ -147,11 +149,21 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
     })
     .join("");
 
-  const news = [
-    { t: "2h ago", s: `${p.name.split(" ")[0]} logged a full practice and carries no designation into the week.` },
-    { t: "1d ago", s: `Coaching staff hinted at an expanded role — snap share has climbed three straight weeks.` },
-    { t: "3d ago", s: `Beat writer expects steady volume; matchup sets up as a get-right spot.` },
-  ];
+  // Real player news (ESPN via nfl-news-api port); fall back to deterministic
+  // blurbs when this player has no wire news yet.
+  const realNews = await getPlayerNews(db, p.player_id, 6);
+  const news: { t: string; s: string; href?: string }[] =
+    realNews.length > 0
+      ? realNews.map((n) => ({
+          t: relTime(n.published_at) || "recently",
+          s: n.summary || n.headline,
+          href: n.link && !n.link.startsWith("espn-article-") ? n.link : undefined,
+        }))
+      : [
+          { t: "2h ago", s: `${p.name.split(" ")[0]} logged a full practice and carries no designation into the week.` },
+          { t: "1d ago", s: `Coaching staff hinted at an expanded role — snap share has climbed three straight weeks.` },
+          { t: "3d ago", s: `Beat writer expects steady volume; matchup sets up as a get-right spot.` },
+        ];
 
   const ownerLine = owner
     ? `Rostered by <a href="/roster/${esc(owner.team_id)}" style="color:var(--neon-blue);text-decoration:none;">${esc(owner.name)}</a> · ${esc(owner.slot_type)}`
@@ -249,10 +261,13 @@ export async function renderPlayerProfile(db: D1Database, playerId: string): Pro
       <span class="section-label">News & notes</span>
       ${news
         .map(
-          (n) => `<div style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
-            <span class="text-2xs text-muted uppercase">${n.t}</span>
-            <p class="text-sm" style="margin-top:2px;line-height:1.45;">${n.s}</p>
-          </div>`
+          (n) => {
+            const bodyHtml = `<span class="text-2xs text-muted uppercase">${esc(n.t)}</span>
+            <p class="text-sm" style="margin-top:2px;line-height:1.45;">${esc(n.s)}</p>`;
+            return n.href
+              ? `<a href="${esc(n.href)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;padding:8px 0;border-bottom:1px solid var(--border-subtle);">${bodyHtml}</a>`
+              : `<div style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">${bodyHtml}</div>`;
+          }
         )
         .join("")}
     </div>`;

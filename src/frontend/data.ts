@@ -213,3 +213,114 @@ export async function getFreeAgents(
     .all<DBPlayer>();
   return results || [];
 }
+
+// ---------------------------------------------------------------------------
+// NFL news + injury feed (real, ESPN-sourced via nfl-news-api port).
+// These read the D1 tables from migration 004 and shape them for the UI.
+// ---------------------------------------------------------------------------
+
+export interface NewsRow {
+  id: number;
+  source: string;
+  headline: string;
+  summary: string | null;
+  link: string;
+  image_url: string | null;
+  published_at: string | null;
+  player_id: string | null;
+  team_id: string | null;
+}
+
+/** Latest league-wide news for the Home carousel. */
+export async function getNews(db: D1Database, limit = 12): Promise<NewsRow[]> {
+  try {
+    const { results } = await db
+      .prepare(
+        `SELECT id, source, headline, summary, link, image_url, published_at, player_id, team_id
+         FROM news_items ORDER BY COALESCE(published_at, fetched_at) DESC LIMIT ?`
+      )
+      .bind(limit)
+      .all<NewsRow>();
+    return results || [];
+  } catch {
+    return []; // table may not exist pre-migration
+  }
+}
+
+/** News for one player, for the Player Profile news feed. */
+export async function getPlayerNews(db: D1Database, playerId: string, limit = 8): Promise<NewsRow[]> {
+  try {
+    const { results } = await db
+      .prepare(
+        `SELECT id, source, headline, summary, link, image_url, published_at, player_id, team_id
+         FROM news_items WHERE player_id = ? ORDER BY COALESCE(published_at, fetched_at) DESC LIMIT ?`
+      )
+      .bind(playerId, limit)
+      .all<NewsRow>();
+    return results || [];
+  } catch {
+    return [];
+  }
+}
+
+/** Is the news feed degraded (failing or stale)? Drives the Section-13 note. */
+export async function feedDegraded(
+  db: D1Database,
+  staleMinutes = 180
+): Promise<{ degraded: boolean; reason: string | null }> {
+  try {
+    const { results } = await db.prepare(`SELECT * FROM feed_status`).all<any>();
+    const rows = results || [];
+    if (rows.length === 0) return { degraded: false, reason: null };
+    for (const r of rows) {
+      if (r.ok === 0) return { degraded: true, reason: `NFL ${r.job} feed is having trouble updating.` };
+    }
+    const newest = rows
+      .map((r: any) => (r.last_ok_at ? Date.parse(r.last_ok_at) : 0))
+      .reduce((a: number, b: number) => Math.max(a, b), 0);
+    if (newest && Date.now() - newest > staleMinutes * 60_000) {
+      return { degraded: true, reason: "NFL data hasn't refreshed recently — some info may be stale." };
+    }
+    return { degraded: false, reason: null };
+  } catch {
+    return { degraded: false, reason: null };
+  }
+}
+
+/** Compact relative time from an ISO timestamp, e.g. "12m ago", "3h ago". */
+export function relTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (isNaN(t)) return "";
+  const secs = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return `${Math.floor(days / 7)}w ago`;
+}
+
+/** Eyebrow label + color class + link for a news row, for the carousel card. */
+export function classifyNews(
+  n: NewsRow
+): { kind: string; cls: string; href: string } {
+  const text = `${n.headline} ${n.summary || ""}`.toLowerCase();
+  const isInjury =
+    /injur|questionable|doubtful|out |ruled out|hamstring|ankle|concussion|ir\b|placed on|designated to return/.test(
+      text
+    );
+  const isTrade = /trade|acquire|deal|sends|swap/.test(text);
+  const isRank = /power rank|ranking|moves? (up|down)|#\d/.test(text);
+
+  // Player-scoped news links to that player's profile; otherwise league hub.
+  const href = n.player_id ? `/playerdb/${n.player_id}` : "/hub/L_TEST";
+
+  if (isInjury) return { kind: "Injury", cls: "text-amber", href };
+  if (isTrade) return { kind: "Trade", cls: "text-purple", href };
+  if (isRank) return { kind: "Power rank", cls: "text-green", href };
+  return { kind: "News", cls: "text-blue", href };
+}
+

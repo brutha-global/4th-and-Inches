@@ -163,6 +163,13 @@ export async function processAllLeaguesWaivers(db: D1Database): Promise<{ proces
         VALUES (?, ?, ?, 'BENCH', ?, 0)
       `).bind(roster_id, team_id, player_id, week).run();
 
+      // Newly-rostered player -> start pulling their news right away (don't
+      // wait for the next cron reconcile). Best-effort; never fail the claim.
+      try {
+        await db.prepare(`INSERT OR IGNORE INTO watchlist (player_id, added_at) VALUES (?, ?)`)
+          .bind(player_id, new Date().toISOString()).run();
+      } catch { /* watchlist table may not exist pre-migration; ignore */ }
+
       // Update waiver record status
       await db.prepare(`
         UPDATE waivers 
